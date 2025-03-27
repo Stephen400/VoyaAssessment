@@ -38,4 +38,17 @@ interface WebService {
         @Part tags: List<MultipartBody.Part>,
         @Part images: List<MultipartBody.Part>
     ): Response<CreateFoodResponse>
+
+    @Multipart
+    @POST("api/foods/{id}")
+    suspend fun updateFood(
+        @Path("id") id: Int,
+        @Part("name") name: RequestBody,
+        @Part("description") description: RequestBody,
+        @Part("category_id") categoryId: RequestBody,
+        @Part("calories") calories: RequestBody,
+        @Part tags: List<MultipartBody.Part>,
+        @Part images: List<MultipartBody.Part>
+    ): Response<CreateFoodResponse>
+
 }

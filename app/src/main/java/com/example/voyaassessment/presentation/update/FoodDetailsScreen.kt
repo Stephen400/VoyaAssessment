@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -74,6 +75,7 @@ fun FoodDetailsScreen(
     var showDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf("") }
     var isSuccess by remember { mutableStateOf(true) }
+    var context = LocalContext.current
 
 
     LaunchedEffect(Unit) {
@@ -89,12 +91,11 @@ fun FoodDetailsScreen(
             Column {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
+                        .fillMaxWidth()
                         .align(Alignment.CenterHorizontally)
                 ) {
-
                     CircularProgressIndicator()
-
                 }
             }
 
@@ -131,6 +132,7 @@ fun FoodDetailsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .padding(top = 16.dp)
             .verticalScroll(rememberScrollState())
             .background(Color.White)
     ) {
@@ -149,7 +151,14 @@ fun FoodDetailsScreen(
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite")
                 }
-                IconButton(onClick = { /* Handle edit action */ }) {
+                IconButton(onClick = {
+                    Log.d("details", foodDetails?.data?.name.toString())
+                    navController.currentBackStackEntry?.savedStateHandle?.set(
+                        "foodDetails",
+                        foodDetails
+                    )
+                    navController.navigate(Route.EDIT_FOOD_SCREEN)
+                }) {
                     Icon(painterResource(R.drawable.ic_edit), contentDescription = "Edit")
                 }
             }
@@ -216,15 +225,18 @@ fun FoodDetailsScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp),
-            shape = RoundedCornerShape(4.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            shape = RoundedCornerShape(2.dp),
             border = BorderStroke(1.dp, Color.LightGray),
             backgroundColor = Color(0xFFF9FAFB)
         ) {
+
             Text(
                 text = "Nutrition",
                 fontSize = 16.sp,
-                modifier = Modifier.padding(start = 16.dp, top = 5.dp),
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .fillMaxHeight(),
                 fontWeight = FontWeight.Light,
                 color = Color(0xFF707989)
             )

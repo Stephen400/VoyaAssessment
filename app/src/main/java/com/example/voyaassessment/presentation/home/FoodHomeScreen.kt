@@ -154,9 +154,9 @@ fun FoodHomeScreen(
                 }
 
                 is ApiResponse.Failure -> {
+                    showRetryText = true
                     isLoadingCategories = false
                     errorMessage = state.message ?: "An error occurred"
-                    showRetryText = true
                 }
             }
 
@@ -284,7 +284,6 @@ fun FoodHomeScreen(
                         }
                     }
                 }
-                FoodListScreen(filteredFoodsList, navController)
 
                 if (showRetryText) {
                     val annotatedText = buildAnnotatedString {
@@ -318,6 +317,9 @@ fun FoodHomeScreen(
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp)
                     )
                 }
+
+                FoodListScreen(filteredFoodsList, navController)
+
 
                 when (val foodState = allFoodState) {
                     is ApiResponse.Idle -> {
@@ -393,7 +395,8 @@ fun FoodCard(food: Food.FoodData, navController: NavController) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(0.5.dp, Color(0xFFE0E0E0)),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
             .clickable {
                 navController.navigate("foodDetailsScreen/${food.id}")
             }

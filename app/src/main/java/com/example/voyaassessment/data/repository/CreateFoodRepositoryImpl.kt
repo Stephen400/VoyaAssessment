@@ -4,6 +4,7 @@ import com.example.voyaassessment.data.WebService
 import com.example.voyaassessment.data.model.remote.Categories
 import com.example.voyaassessment.data.model.remote.CreateFoodResponse
 import com.example.voyaassessment.data.model.remote.request.CreateFood
+import com.example.voyaassessment.data.model.remote.request.UpdateFoodRequest
 import com.example.voyaassessment.domain.CreateFoodRepository
 import com.example.voyaassessment.utils.ApiResponse
 import kotlinx.coroutines.flow.Flow
@@ -67,7 +68,7 @@ class CreateFoodRepositoryImpl @Inject constructor(
                     calories = createFood.calories.toString().toRequestBody(),
                     tags = tagsParts,
                     images = createFood.images
-                ) // This returns Response<CreateFoodResponse>
+                )
                 if (response.isSuccessful) {
                     emit(ApiResponse.Success(response.body()))
                 } else {
@@ -83,6 +84,18 @@ class CreateFoodRepositoryImpl @Inject constructor(
                 emit(ApiResponse.Failure(e, e.message))
             }
         }
+
+    override suspend fun updateFood(
+        foodId: Int,
+        updateFoodRequest: UpdateFoodRequest
+    ): Flow<ApiResponse<CreateFoodResponse>> = flow{
+        emit(ApiResponse.Loading)
+        val tags = updateFoodRequest.tags
+        val tagss = listOf(1, 2, 3)
+        val tagsParts = tags.map { tag ->
+            MultipartBody.Part.createFormData("tags[]", tag.toString())
+        }
+    }
 
     private fun String.toRequestBody(): RequestBody =
         RequestBody.create("text/plain".toMediaTypeOrNull(), this)

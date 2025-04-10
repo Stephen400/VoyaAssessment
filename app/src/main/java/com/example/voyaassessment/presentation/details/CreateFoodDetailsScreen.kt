@@ -270,7 +270,6 @@ fun CreateFoodDetailsScreen(
                         subtitle = "",
                         buttonText = "Continue",
                         onButtonClick = {
-                            // Navigate to the next screen
                             navController.navigate(Route.FOOD_HOME_SCREEN)
                         }
                     )
@@ -342,7 +341,11 @@ fun CreateFoodDetailsScreen(
                 }
 
                 is ApiResponse.Loading -> {
-                    CircularProgressIndicator()
+                    Box(Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center){
+                        CircularProgressIndicator()
+                    }
+
                 }
 
                 is ApiResponse.Success -> {
@@ -409,7 +412,7 @@ fun CreateFoodDetailsScreen(
             Text(
                 text = "Press enter once you've typed a tag",
                 style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 4.dp, bottom = 15.dp)
             )
 
 
@@ -435,8 +438,8 @@ fun CreateFoodDetailsScreen(
                 shape = RectangleShape,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(55.dp)
-                    .padding(top = 15.dp)
+                    .height(75.dp)
+                    .padding(top = 20.dp)
             ) {
                 Text(text = "Add Food")
             }
@@ -515,27 +518,6 @@ fun TagChip(tag: String, onRemove: () -> Unit) {
 }
 
 
-@Composable
-fun Chip(text: String, onRemove: () -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFE0E0E0)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Text(text = text, color = Color.Black)
-            IconButton(onClick = onRemove, modifier = Modifier.size(20.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Remove",
-                    tint = Color.Black
-                )
-            }
-        }
-    }
-}
 
 
 @Preview

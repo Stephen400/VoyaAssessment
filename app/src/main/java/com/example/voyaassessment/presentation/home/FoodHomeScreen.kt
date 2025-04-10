@@ -1,6 +1,5 @@
 package com.example.voyaassessment.presentation.home
 
-import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -75,6 +74,7 @@ import com.example.voyaassessment.data.model.remote.Categories
 import com.example.voyaassessment.data.model.remote.Food
 import com.example.voyaassessment.utils.ApiResponse
 import com.example.voyaassessment.utils.CustomLoadingBar
+import com.example.voyaassessment.utils.ProgressDialog
 import com.example.voyaassessment.utils.Route
 import com.example.voyaassessment.utils.dialogs.CustomAlertDialog
 
@@ -98,6 +98,7 @@ fun FoodHomeScreen(
 
     // UI states
     var isLoading by remember { mutableStateOf(false) }
+//    val isLoading = remember { mutableStateOf(false) }
     var isLoadingCategories by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf("") }
@@ -142,11 +143,11 @@ fun FoodHomeScreen(
 
                 is ApiResponse.Loading -> {
                     isLoadingCategories = true
-
                 }
 
                 is ApiResponse.Success -> {
                     isLoadingCategories = false
+                    showRetryText = false
                     categoriesList = state.data?.data!!
                     mainCategoriesList = categoriesList
                     foodHomeViewModel.getAllFood()
@@ -162,12 +163,29 @@ fun FoodHomeScreen(
 
 
             if (isLoading) {
-                CustomLoadingBar(
-                    "Please wait...",
-                    imageResId = R.drawable.loading
-                )
+                // Overlay a full-screen opaque background
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxSize()
+//                        .background(Color.Black.copy(alpha = 0.5f)),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    CustomLoadingBar(
+//                        message = "Please wait...",
+//                        imageResId = R.drawable.loading
+//                    )
+//                }
+
+                    ProgressDialog(
+                        isVisible = isLoading,
+                        topTitle = "Please wait...",
+                        bottomTitle = "Loading your favourite app!",
+                        onDismiss = {
+                            isLoading = false
+                        }
+                    )
                 foodHomeViewModel.clearLoadingState()
-            }
+                }
 
             Row(
                 modifier = Modifier
@@ -305,7 +323,7 @@ fun FoodHomeScreen(
                         text = annotatedText,
                         onClick = { offset ->
                             annotatedText.getStringAnnotations(
-                                tag = "retry",
+                                tag = "Retry",
                                 start = offset,
                                 end = offset
                             )

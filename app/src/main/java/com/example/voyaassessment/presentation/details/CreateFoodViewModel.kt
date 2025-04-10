@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.voyaassessment.data.model.remote.Categories
 import com.example.voyaassessment.data.model.remote.CreateFoodResponse
 import com.example.voyaassessment.data.model.remote.request.CreateFood
+import com.example.voyaassessment.data.model.remote.request.UpdateFoodRequest
 import com.example.voyaassessment.domain.CreateFoodRepository
 import com.example.voyaassessment.utils.ApiResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +20,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import javax.inject.Inject
 
+
 @HiltViewModel
 class CreateFoodViewModel @Inject constructor(
     private val createFoodRepository: CreateFoodRepository
@@ -27,26 +29,33 @@ class CreateFoodViewModel @Inject constructor(
     private val _categoriesState = MutableStateFlow<ApiResponse<Categories>>(ApiResponse.Idle)
     val categoriesState: StateFlow<ApiResponse<Categories>> = _categoriesState
 
-    private val _createFoodState = MutableStateFlow<ApiResponse<CreateFoodResponse>>(ApiResponse.Idle)
+    private val _createFoodState =
+        MutableStateFlow<ApiResponse<CreateFoodResponse>>(ApiResponse.Idle)
     val createFoodState: StateFlow<ApiResponse<CreateFoodResponse>> = _createFoodState
 
+    private val _updateFoodState =
+        MutableStateFlow<ApiResponse<CreateFoodResponse>>(ApiResponse.Idle)
+    val updateFoodState: StateFlow<ApiResponse<CreateFoodResponse>> = _updateFoodState
 
-    fun getCategories(){
+
+    fun getCategories() {
         _categoriesState.value = ApiResponse.Loading
         viewModelScope.launch {
-            createFoodRepository.getCategories().collect{response ->
+            createFoodRepository.getCategories().collect { response ->
                 _categoriesState.value = response
             }
 
         }
     }
 
-    fun createFood(name: String,
-                   description: String,
-                   categoryId: Int,
-                   calories: Int,
-                   tags: List<String>,
-                   imageFiles: List<File>){
+    fun createFood(
+        name: String,
+        description: String,
+        categoryId: Int,
+        calories: Int,
+        tags: List<String>,
+        imageFiles: List<File>
+    ) {
 
         val imageParts = imageFiles.mapIndexed { index, file ->
             prepareImagePart(file, "images[$index]")
@@ -65,10 +74,43 @@ class CreateFoodViewModel @Inject constructor(
             tags = tagList,
             images = imageParts
         )
+
         _createFoodState.value = ApiResponse.Loading
         viewModelScope.launch {
-            createFoodRepository.createFood(createFoodRequest).collect{response ->
+            createFoodRepository.createFood(createFoodRequest).collect { response ->
                 _createFoodState.value = response
+            }
+
+        }
+    }
+
+    fun updateFood(
+        foodId: Int,
+        name: String,
+        description: String,
+        categoryId: Int,
+        calories: String,
+        tags: List<String>,
+        imageFiles: List<File>
+    ) {
+
+        _updateFoodState.value = ApiResponse.Loading
+        val createImageMultipart = imageFiles.mapIndexed { index, file ->
+            prepareImagePart(file, "images[$index]")
+        }
+
+        val updateFoodRequest = UpdateFoodRequest(
+            name = name,
+            description = description,
+            categoryId = categoryId.toString(),
+            calories = calories,
+            tags = tags,
+            images = createImageMultipart
+        )
+
+        viewModelScope.launch {
+            createFoodRepository.updateFood(foodId, updateFoodRequest).collect { response ->
+                _updateFoodState.value = response
             }
 
         }
@@ -78,7 +120,6 @@ class CreateFoodViewModel @Inject constructor(
         val requestFile = file.asRequestBody("image/*".toMediaTypeOrNull())
         return MultipartBody.Part.createFormData(partName, file.name, requestFile)
     }
-
 
 
 }

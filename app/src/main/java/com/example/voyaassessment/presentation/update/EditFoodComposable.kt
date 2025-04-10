@@ -12,11 +12,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -54,6 +56,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -87,20 +91,21 @@ fun EditFoodScreen(
     var categoryId by remember { mutableIntStateOf(Int.MAX_VALUE) }
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var tags by remember { mutableStateOf(listOf<String>()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var showDialogSuccess by remember { mutableStateOf(false) }
 
     // Observe API responses
     val categoriesState by createFoodViewModel.categoriesState.collectAsState()
-    val createFoodResponse by createFoodViewModel.createFoodState.collectAsState()
-//    var foodDetails by remember { mutableStateOf<FoodDetails?>(null) }
+    val updateFoodResponse by createFoodViewModel.updateFoodState.collectAsState()
 
-    // Determine if the "Add Food" button should be enabled
+
     val isButtonEnabled = name.text.isNotEmpty() &&
             description.text.isNotEmpty() &&
             tags.isNotEmpty() &&
             selectedCategory.isNotEmpty() &&
             selectedImages.isNotEmpty()
 
-    // Launch camera and gallery pickers
+
     val launcherCamera =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
             bitmap?.let {
@@ -116,7 +121,7 @@ fun EditFoodScreen(
             }
         }
 
-    // Fetch categories on first composition
+
     LaunchedEffect(Unit) {
         createFoodViewModel.getCategories()
     }
@@ -124,7 +129,6 @@ fun EditFoodScreen(
     // Prefill state when foodDetails is available.
     LaunchedEffect(foodDetails) {
         foodDetails.let { details ->
-            // Only update if the current fields are empty, to avoid overwriting user changes.
             if (name.text.isEmpty()) {
                 name = TextFieldValue(details.data?.name ?: "")
             }
@@ -137,22 +141,22 @@ fun EditFoodScreen(
             if (selectedCategory.isEmpty()) {
                 // Assuming details.data has a category name property
                 selectedCategory = details.data?.category?.name ?: ""
+                categoryId = details.data?.category?.id ?: 0
             }
             if (selectedImages.isEmpty()) {
-                // Assuming foodImages is a list of objects with an imageUrl property
                 details.data?.foodImages?.let { imagesList ->
                     selectedImages = imagesList.mapNotNull { imageData ->
                         if (!imageData.imageUrl.isNullOrEmpty()) Uri.parse(imageData.imageUrl) else null
                     }
                 }
             }
-            if(tags.isEmpty()){
+            if (tags.isEmpty()) {
                 tags = details.data?.foodTags!!
             }
         }
     }
 
-    // Main content layout
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -160,7 +164,6 @@ fun EditFoodScreen(
             .padding(16.dp)
             .padding(top = 40.dp)
     ) {
-        // Top Bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -184,7 +187,7 @@ fun EditFoodScreen(
             )
         }
 
-        // Camera & Gallery Buttons
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -203,7 +206,10 @@ fun EditFoodScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(painter = painterResource(R.drawable.camera), contentDescription = "Take photo")
+                    Image(
+                        painter = painterResource(R.drawable.camera),
+                        contentDescription = "Take photo"
+                    )
                     Text(
                         text = "Take photo",
                         color = Color(0xFF1D2433),
@@ -227,7 +233,10 @@ fun EditFoodScreen(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Image(painter = painterResource(R.drawable.uploadsimple), contentDescription = "Upload")
+                    Image(
+                        painter = painterResource(R.drawable.uploadsimple),
+                        contentDescription = "Upload"
+                    )
                     Text(
                         text = "Upload",
                         color = Color(0xFF1D2433),
@@ -273,38 +282,62 @@ fun EditFoodScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Display a loading indicator when updating food
-        if (createFoodResponse is ApiResponse.Loading) {
+        if (isLoading) {
             CustomLoadingBar(
                 message = "Updating Food",
                 imageResId = R.drawable.loading
             )
         }
 
-        when (createFoodResponse) {
-            is ApiResponse.Success -> {
+
+        if (showDialogSuccess) {
+            Dialog(
+                onDismissRequest = { showDialogSuccess = false },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFF5F7FB)),
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     SuccessDialog(
-                        title = (createFoodResponse as ApiResponse.Success).data?.message.toString(),
+                        title = (updateFoodResponse as ApiResponse.Success).data?.message.toString(),
                         subtitle = "",
                         buttonText = "Continue",
                         onButtonClick = {
-                            // Navigate to the next screen
-                            navController.navigate(Route.FOOD_HOME_SCREEN)
+                            navController.navigate(Route.FOOD_HOME_SCREEN) {
+                                popUpTo(Route.FOOD_HOME_SCREEN) { inclusive = true }
+                            }
+                            showDialogSuccess = false
                         }
                     )
+
                 }
             }
-            is ApiResponse.Failure -> {
-                Tools.showToast(context, (createFoodResponse as ApiResponse.Failure).message)
-            }
-            else -> Unit
         }
+
+        // loading indicator when updating food
+
+        when (updateFoodResponse) {
+            is ApiResponse.Failure -> {
+                isLoading = false
+                Tools.showToast(context, (updateFoodResponse as ApiResponse.Failure).message)
+            }
+
+            ApiResponse.Idle -> {
+                isLoading = false
+            }
+
+            ApiResponse.Loading -> {
+                isLoading = true
+            }
+
+            is ApiResponse.Success -> {
+                isLoading = false
+                showDialogSuccess = true
+            }
+        }
+
 
         // Name Field
         Text(
@@ -357,14 +390,18 @@ fun EditFoodScreen(
                 }
             )
             when (val state = categoriesState) {
-                is ApiResponse.Idle -> { }
+                is ApiResponse.Idle -> {}
                 is ApiResponse.Loading -> {
                     CircularProgressIndicator()
                 }
+
                 is ApiResponse.Success -> {
                     categories = state.data?.data ?: emptyList()
                 }
-                is ApiResponse.Failure -> { }
+
+                is ApiResponse.Failure -> {
+
+                }
             }
             DropdownMenu(
                 expanded = isDropdownExpanded,
@@ -423,20 +460,23 @@ fun EditFoodScreen(
             )
         }
 
-        // Add Food Button
+
         Button(
             onClick = {
                 val files = selectedImages.mapNotNull { uri ->
                     Tools.uriToFile(context, uri)
                 }
-                createFoodViewModel.createFood(
-                    name = name.text,
-                    description = description.text,
-                    categoryId = categoryId,
-                    calories = calories.text.toInt(),
-                    tags = tags,
-                    imageFiles = files
-                )
+                foodDetails.data?.id?.let {
+                    createFoodViewModel.updateFood(
+                        it,
+                        name = name.text,
+                        description = description.text,
+                        categoryId = categoryId,
+                        calories = calories.text,
+                        tags = tags,
+                        imageFiles = files
+                    )
+                }
             },
             enabled = isButtonEnabled,
             colors = buttonColors(
@@ -446,10 +486,10 @@ fun EditFoodScreen(
             shape = RectangleShape,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(55.dp)
+                .height(65.dp)
                 .padding(top = 15.dp)
         ) {
-            Text(text = "Add Food")
+            Text(text = "Update Food")
         }
     }
 }
@@ -460,13 +500,3 @@ private fun EditFoodScreenPreview() {
     val navController = rememberNavController()
 
 }
-
-// Save Bitmap to Internal Storage (for Camera images)
-//fun saveImageToInternalStorage(context: Context, bitmap: Bitmap): Uri {
-//    val filename = "${System.currentTimeMillis()}.jpg"
-//    val file = File(context.filesDir, filename)
-//    val outputStream = FileOutputStream(file)
-//    bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-//    outputStream.close()
-//    return Uri.fromFile(file)
-//}

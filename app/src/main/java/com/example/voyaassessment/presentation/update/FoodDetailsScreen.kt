@@ -82,52 +82,51 @@ fun FoodDetailsScreen(
         foodDetailsScreenViewModel.getFoodDetails(foodId.toInt())
     }
 
-    when (val state = foodDetailsState) {
-        is ApiResponse.Idle -> {
-
-        }
-
-        is ApiResponse.Loading -> {
-            Column {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth()
-                        .align(Alignment.CenterHorizontally)
-                ) {
-                    CircularProgressIndicator()
-                }
-            }
-
-        }
-
-        is ApiResponse.Success -> {
-            foodDetails = state.data
-        }
-
-        is ApiResponse.Failure -> {
-            showDialog = true
-            isSuccess = false
-            dialogMessage = state.message ?: "Something went wrong!"
-
-        }
-    }
-
-    if (showDialog) {
-        CustomAlertDialog(
-            title = if (isSuccess) "Success" else "Error",
-            message = dialogMessage,
-            onDismiss = {
-                Log.d("Dismiss", "onDismiss clicked")
-                showDialog = false
-            },
-            onConfirm = {
-                Log.d("Confirm", "onConfirm clicked")
-                showDialog = false
-            },
-            isSuccess = isSuccess
-        )
-    }
+//    if (showDialog) {
+//        CustomAlertDialog(
+//            title = if (isSuccess) "Success" else "Error",
+//            message = dialogMessage,
+//            onDismiss = {
+//                Log.d("Dismiss", "onDismiss clicked")
+//                showDialog = false
+//            },
+//            onConfirm = {
+//                Log.d("Confirm", "onConfirm clicked")
+//                showDialog = false
+//            },
+//            isSuccess = isSuccess
+//        )
+//    }
+//
+//    when (val state = foodDetailsState) {
+//        is ApiResponse.Idle -> {
+//
+//        }
+//
+//        is ApiResponse.Loading -> {
+//            Column {
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxSize(),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    CircularProgressIndicator()
+//                }
+//            }
+//
+//        }
+//
+//        is ApiResponse.Success -> {
+//            foodDetails = state.data
+//        }
+//
+//        is ApiResponse.Failure -> {
+//            showDialog = true
+//            isSuccess = false
+//            dialogMessage = state.message ?: "Something went wrong!"
+//
+//        }
+//    }
 
     Column(
         modifier = Modifier
@@ -161,6 +160,50 @@ fun FoodDetailsScreen(
                 }) {
                     Icon(painterResource(R.drawable.ic_edit), contentDescription = "Edit")
                 }
+            }
+        }
+
+        if (showDialog) {
+            CustomAlertDialog(
+                title = if (isSuccess) "Success" else "Error",
+                message = dialogMessage,
+                onDismiss = {
+                    showDialog = false
+                },
+                onConfirm = {
+                    showDialog = false
+                },
+                isSuccess = isSuccess
+            )
+        }
+
+        when (val state = foodDetailsState) {
+            is ApiResponse.Idle -> {
+
+            }
+
+            is ApiResponse.Loading -> {
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+            }
+
+            is ApiResponse.Success -> {
+                foodDetails = state.data
+            }
+
+            is ApiResponse.Failure -> {
+                showDialog = true
+                isSuccess = false
+                dialogMessage = state.message ?: "Something went wrong!"
+
             }
         }
 

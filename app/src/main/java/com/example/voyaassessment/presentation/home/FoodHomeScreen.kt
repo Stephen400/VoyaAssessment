@@ -77,6 +77,7 @@ import com.example.voyaassessment.utils.CustomLoadingBar
 import com.example.voyaassessment.utils.ProgressDialog
 import com.example.voyaassessment.utils.Route
 import com.example.voyaassessment.utils.dialogs.CustomAlertDialog
+import com.example.voyaassessment.utils.dialogs.ErrorDialog
 
 
 @Composable
@@ -98,7 +99,7 @@ fun FoodHomeScreen(
 
     // UI states
     var isLoading by remember { mutableStateOf(false) }
-//    val isLoading = remember { mutableStateOf(false) }
+    var isResponseError by remember { mutableStateOf(false) }
     var isLoadingCategories by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var dialogMessage by remember { mutableStateOf("") }
@@ -143,10 +144,12 @@ fun FoodHomeScreen(
 
                 is ApiResponse.Loading -> {
                     isLoadingCategories = true
+                    isResponseError = false
                 }
 
                 is ApiResponse.Success -> {
                     isLoadingCategories = false
+                    isResponseError = false
                     showRetryText = false
                     categoriesList = state.data?.data!!
                     mainCategoriesList = categoriesList
@@ -155,14 +158,38 @@ fun FoodHomeScreen(
                 }
 
                 is ApiResponse.Failure -> {
+                    isResponseError = true
                     showRetryText = true
                     isLoadingCategories = false
                     errorMessage = state.message ?: "An error occurred"
                 }
             }
 
+            if (isResponseError){
+                ErrorDialog(
+                    isVisible = isResponseError,
+                    "Failed",
+                    errorMessage,
+                    onDismissRequest = { isResponseError = false },
+                    onConfirmDelete = {
+                        // Handle your confirm action
+                    }
+                )
+            }
+
 
             if (isLoading) {
+                ProgressDialog(
+                    isVisible = isLoading,
+                    topTitle = "Please wait...",
+                    bottomTitle = "Loading your favourite app!",
+                    onDismiss = {
+                        isLoading = false
+                    }
+                )
+                foodHomeViewModel.clearLoadingState()
+
+
                 // Overlay a full-screen opaque background
 //                Box(
 //                    modifier = Modifier
@@ -175,16 +202,6 @@ fun FoodHomeScreen(
 //                        imageResId = R.drawable.loading
 //                    )
 //                }
-
-                    ProgressDialog(
-                        isVisible = isLoading,
-                        topTitle = "Please wait...",
-                        bottomTitle = "Loading your favourite app!",
-                        onDismiss = {
-                            isLoading = false
-                        }
-                    )
-                foodHomeViewModel.clearLoadingState()
                 }
 
             Row(

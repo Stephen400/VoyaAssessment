@@ -69,6 +69,8 @@ dependencies {
 
     //Compose
     implementation libs.ui
+    implementation libs.material3
+
 
 
     //Coroutines

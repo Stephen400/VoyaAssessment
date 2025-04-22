@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -73,7 +75,6 @@ import com.example.voyaassessment.R
 import com.example.voyaassessment.data.model.remote.Categories
 import com.example.voyaassessment.data.model.remote.Food
 import com.example.voyaassessment.utils.ApiResponse
-import com.example.voyaassessment.utils.CustomLoadingBar
 import com.example.voyaassessment.utils.ProgressDialog
 import com.example.voyaassessment.utils.Route
 import com.example.voyaassessment.utils.dialogs.CustomAlertDialog
@@ -95,7 +96,8 @@ fun FoodHomeScreen(
 
     // Foods
     var foodsList by remember { mutableStateOf(emptyList<Food.FoodData>()) }
-    var filteredFoodsList = listOf<Food.FoodData>()
+//    var filteredFoodsList = listOf<Food.FoodData>()
+
 
     // UI states
     var isLoading by remember { mutableStateOf(false) }
@@ -107,6 +109,17 @@ fun FoodHomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var showRetryText by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var selectedCategory by remember { mutableStateOf("All") }
+
+    var filteredFoodsList = remember(foodsList, selectedCategory) {
+        if (selectedCategory == "All") {
+            foodsList
+        } else {
+            foodsList.filter { it.foodTags.contains(selectedCategory) }
+        }
+    }
+
 
 
     Scaffold(
@@ -134,7 +147,7 @@ fun FoodHomeScreen(
         ) {
 
             LaunchedEffect(Unit) {
-                foodHomeViewModel.getCategories()
+//                foodHomeViewModel.getCategories()
             }
 
             when (val state = categoriesState) {
@@ -158,6 +171,8 @@ fun FoodHomeScreen(
                 }
 
                 is ApiResponse.Failure -> {
+                    foodHomeViewModel.clearLoadingState()
+                    isLoading = false
                     isResponseError = true
                     showRetryText = true
                     isLoadingCategories = false
@@ -165,7 +180,7 @@ fun FoodHomeScreen(
                 }
             }
 
-            if (isResponseError){
+            if (isResponseError) {
                 ErrorDialog(
                     isVisible = isResponseError,
                     "Failed",
@@ -188,21 +203,7 @@ fun FoodHomeScreen(
                     }
                 )
                 foodHomeViewModel.clearLoadingState()
-
-
-                // Overlay a full-screen opaque background
-//                Box(
-//                    modifier = Modifier
-//                        .fillMaxSize()
-//                        .background(Color.Black.copy(alpha = 0.5f)),
-//                    contentAlignment = Alignment.Center
-//                ) {
-//                    CustomLoadingBar(
-//                        message = "Please wait...",
-//                        imageResId = R.drawable.loading
-//                    )
-//                }
-                }
+            }
 
             Row(
                 modifier = Modifier
@@ -224,11 +225,26 @@ fun FoodHomeScreen(
             }
 
             Column(modifier = Modifier.padding(16.dp)) {
-                var selectedCategory by remember {
-                    mutableStateOf(
-                        if (categoriesList.isNotEmpty()) categoriesList.first()
-                        else "All"
-                    )
+                //Old Implementation
+//                var selectedCategory by remember {
+//                    mutableStateOf(
+//                        if (categoriesList.isNotEmpty()) categoriesList.first()
+//                        else "All"
+//                    )
+//                }
+                val displayCategoriesTags by remember(categoriesList, searchQuery) {
+                    derivedStateOf {
+                        val names = categoriesList.mapNotNull { it.name }
+                        if (searchQuery.isBlank()) {
+                            //Show full, unfiltered list when query is empty
+                            listOf("All") + names
+                        } else {
+                            // only matching names when user types
+                            listOf("All") + names.filter {
+                                it.contains(searchQuery, ignoreCase = true)
+                            }
+                        }
+                    }
                 }
 
 
@@ -278,7 +294,6 @@ fun FoodHomeScreen(
                                 ignoreCase = true
                             ) == true
                         }
-                        categoriesList = if (newQuery.isEmpty()) mainCategoriesList else filtered
                     },
                     placeholder = {
                         Text(
@@ -299,7 +314,7 @@ fun FoodHomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(categoriesList) { category ->
+                    items(displayCategoriesTags) { category ->
                         val isSelected = selectedCategory == category
                         Button(
                             onClick = { selectedCategory = category },
@@ -313,7 +328,7 @@ fun FoodHomeScreen(
                                 .padding(vertical = 4.dp)
                         ) {
                             Text(
-                                text = category.name.toString(),
+                                text = category,
                                 fontFamily = FontFamily.SansSerif
                             )
                         }
@@ -344,10 +359,7 @@ fun FoodHomeScreen(
                                 start = offset,
                                 end = offset
                             )
-                                .firstOrNull()?.let {
-                                    // Trigger the retry action
-                                    foodHomeViewModel.getCategories()
-                                }
+                            foodHomeViewModel.getCategories()
                         },
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp)
                     )

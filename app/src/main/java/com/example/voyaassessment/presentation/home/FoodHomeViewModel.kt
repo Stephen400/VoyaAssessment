@@ -27,6 +27,10 @@ class FoodHomeViewModel @Inject constructor(
     private val _allFoodState = MutableStateFlow<ApiResponse<Food>>(ApiResponse.Idle)
     val allFoodState: StateFlow<ApiResponse<Food>> = _allFoodState
 
+    init {
+        getCategories()
+    }
+
     fun getTags() {
         _getTags.value = ApiResponse.Loading
         viewModelScope.launch {
